@@ -114,6 +114,11 @@ async function unseal(d,pw){
 // Password lives in sessionStorage: reload inside a tab stays open, closing it
 // re-locks. localStorage would leave plaintext creds on a shared machine.
 export const GATE_JS = `${DECRYPT_JS}
+// crypto.subtle only exists in a secure context. Over plain http the page would
+// otherwise accept the password and do nothing at all, which reads as a broken
+// site rather than a misconfigured one.
+if(location.protocol==='http:'&&!['localhost','127.0.0.1'].includes(location.hostname))location.replace(location.href.replace(/^http:/,'https:'));
+if(!crypto.subtle)document.getElementById('err').textContent='需要 HTTPS 才能解密，请用 https:// 打开';
 async function open(pw){
   const html=await unseal(DATA,pw);
   sessionStorage.setItem('k',pw);
