@@ -83,6 +83,13 @@ test('index lists notes, action items and searchable text', () => {
   expect(html).toContain('data-s="名创报价口径对齐 2026-05-11 石洋 dt 大脑 名创"')
 })
 
+test('an empty workspace still renders a usable index', () => {
+  const html = indexPlaintext([])
+  expect(html).toContain('还没有记录')
+  expect(html).not.toContain('id="q"')
+  expect(html).not.toContain('待办事项')
+})
+
 test('every action item reaches the page, not just the first screenful', () => {
   const many = Array.from({ length: 60 }, (_, i) => note({ hash: `h${i}`, actionItems: [`任务${i}`] }))
   const html = indexPlaintext(many)

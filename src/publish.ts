@@ -192,10 +192,6 @@ async function main() {
 
   const config = await loadConfig(Boolean(outDir) || dryRun)
   const notes = await scanNotes(config.workspace)
-  if (notes.length === 0) {
-    console.log('没有可发布的笔记')
-    return
-  }
   const manifest = force || outDir ? {} : await readJson<Record<string, string>>(MANIFEST_PATH, {})
   const plan = await buildPlan(config, notes, manifest)
 

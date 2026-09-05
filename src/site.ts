@@ -199,11 +199,17 @@ export function indexPlaintext(notes: Note[]): string {
     `待办事项 (${actions.length})`,
     actions.map(a => `${esc(a.task)} <a class="meta" href="n/${a.n.hash}.html">${esc(a.n.date)}</a>`),
   )
+  // An empty site is the normal state of a fresh install, not an error: the
+  // index still ships, so the first visit says "nothing yet" instead of 404.
+  if (notes.length === 0) {
+    return `<h1>录音记录</h1>
+<p class="meta">还没有记录</p>
+<p>把录音笔插到电脑上，处理完成后会自动出现在这里。</p>`
+  }
   // Keyed off the newest note, not the clock: a wall-clock stamp would change
   // the page fingerprint on every run and re-upload a site that never changed.
-  const latest = notes[0] ? `最新 ${notes[0].date}` : ''
   return `<h1>录音记录</h1>
-<p class="meta">${notes.length} 条 · ${latest}</p>
+<p class="meta">${notes.length} 条 · 最新 ${notes[0]!.date}</p>
 <input id="q" type="search" placeholder="搜索标题、日期、参与者、项目" autocomplete="off">
 ${items.join('')}
 ${pending}`

@@ -128,3 +128,11 @@ test('the error page stays readable even when the site is encrypted', async () =
   expect(err).toContain('页面不存在')
   expect(err).not.toContain('const DATA=')
 })
+
+test('a workspace with no notes publishes an index rather than nothing', async () => {
+  const empty = mkdtempSync(join(os.tmpdir(), 'vnsite-empty-'))
+  mkdirSync(join(empty, '_metadata'), { recursive: true })
+  const plan = await buildPlan({ ...config, password: '' }, await scanNotes(empty), {})
+  expect([...plan.texts.keys()].sort()).toEqual(['error.html', 'index.html'])
+  expect(plan.texts.get('index.html')).toContain('还没有记录')
+})
