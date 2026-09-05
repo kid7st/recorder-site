@@ -11,6 +11,9 @@ recorder → voicenote (transcribe + summarise) → workspace/ → recorder-site
               scheduled, 60s                   metadata + audio    scheduled, 5min
 ```
 
+Two ways to install: a development checkout (below), or a packaged Windows
+installer for customers, see [docs/deploy-customer.md](docs/deploy-customer.md).
+
 Runs on macOS and Windows. Two schedulers, same code:
 
 | | macOS | Windows |
@@ -128,16 +131,16 @@ Unregister-ScheduledTask -TaskName recorder-site -Confirm:$false
 Set `PUBLISH_INTERVAL` (seconds, default 300) before installing to change the
 schedule.
 
-### Two machines, one bucket
+### One machine per bucket
 
-Each machine publishes what its own workspace contains, including `index.html`.
-So if the Mac and the PC hold **different** recordings, whichever ran last owns
-the index and the other machine's notes vanish from the list (their pages stay
-uploaded, just unreachable).
+Each machine publishes what its own workspace contains, `index.html` included.
+Two machines with **different** recordings pointed at one bucket will overwrite
+each other's index, and whichever ran last wins (the other's pages stay uploaded,
+just unreachable from the list).
 
-Keep the workspace itself in sync between the machines (iCloud Drive, Syncthing,
-坚果云, …) and the problem disappears: both see the same notes and publish the
-same site. If instead you want them independent, give each its own bucket.
+So: one bucket per machine. If two machines should share a site, sync the
+workspace between them instead (iCloud Drive, Syncthing, 坚果云, …) so both
+publish identical content.
 
 ## Incremental uploads
 
