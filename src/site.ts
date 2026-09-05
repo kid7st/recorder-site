@@ -210,10 +210,24 @@ ${pending}`
 }
 
 /**
- * Wrap plaintext HTML in the password gate. The browser title stays generic on
- * every page — a real title in the tab or in history would leak client names
- * that the body is encrypted to protect.
+ * Wrap page content for upload. With a password the body is encrypted behind the
+ * gate; without one it ships readable to anyone who loads the URL.
+ *
+ * The browser title stays generic either way — in the encrypted mode a real
+ * title in the tab or in history would leak the client names the body protects.
  */
 export async function sealPage(key: string, plaintext: string, password: string): Promise<string> {
-  return shell('录音记录', await seal(plaintext, password), key === 'index.html' ? SEARCH_JS : '')
+  const search = key === 'index.html' ? SEARCH_JS : ''
+  if (!password) return openShell('录音记录', plaintext, search)
+  return shell('录音记录', await seal(plaintext, password), search)
+}
+
+function openShell(title: string, body: string, extraJs: string): string {
+  return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>${esc(title)}</title><style>${STYLE}</style></head><body>
+<div id="app">${body}</div>
+${extraJs ? `<script>${extraJs}\nwindow.onReady()</script>` : ''}
+</body></html>`
 }

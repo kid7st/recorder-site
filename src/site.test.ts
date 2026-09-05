@@ -47,6 +47,18 @@ test('sealed page ships no plaintext', async () => {
   expect(await unseal(JSON.parse(html.match(/const DATA=(\{.*?\});/s)![1]), 'pw')).toBe(plaintext)
 })
 
+test('without a password the page ships readable, with search still working', async () => {
+  const html = await sealPage('index.html', indexPlaintext([note()]), '')
+  expect(html).toContain('名创报价口径对齐')
+  expect(html).not.toContain('const DATA=')
+  expect(html).not.toContain('访问口令')
+  expect(html).toContain('window.onReady()')
+
+  const page = await sealPage('n/abc123.html', notePlaintext(note()), '')
+  expect(page).toContain('src="../a/abc123.mp3"')
+  expect(page).not.toContain('window.onReady()')
+})
+
 test('only the index page carries the search script', async () => {
   expect(await sealPage('index.html', 'x', 'pw')).toContain('window.onReady=')
   expect(await sealPage('n/a.html', 'x', 'pw')).not.toContain('window.onReady=')

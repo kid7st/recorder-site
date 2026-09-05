@@ -55,15 +55,16 @@ async function loadConfig(localOnly: boolean): Promise<Config> {
   const workspace = raw.workspace || (await readJson<any>(VOICENOTE_CONFIG, {})).VOICENOTE_WORKSPACE
   if (!workspace) throw new Error('未找到 workspace：在配置里设置 workspace，或先配置 voicenote')
   if (!existsSync(workspace)) throw new Error(`workspace 不存在: ${workspace}`)
-  // Notes carry client names and pricing. Publishing them unencrypted to a
-  // public bucket is not a default anyone should get by forgetting a field.
-  if (!raw.password) throw new Error('必须设置 password：站点内容会用它加密，没有口令不允许发布')
+  // An absent password is a deliberate choice, not a typo: the bucket is
+  // public-read, so an unencrypted site is readable by anyone with the URL.
+  // Say so on every run rather than letting a dropped field go unnoticed.
+  if (!raw.password) console.warn('警告：未设置 password，站点内容以明文发布，任何人知道网址即可读取。')
   for (const k of localOnly ? [] : ['secretId', 'secretKey', 'bucket', 'region']) {
     if (!raw.cos?.[k]) throw new Error(`缺少 cos.${k}`)
   }
   return {
     workspace,
-    password: raw.password,
+    password: raw.password || '',
     cos: raw.cos,
     uploadAudio: raw.uploadAudio !== false,
     // No default from the bucket name: COS forces Content-Disposition:attachment
@@ -160,7 +161,10 @@ export async function buildPlan(config: Config, notes: Note[], manifest: Record<
   pages.push({ key: 'index.html', plaintext: indexPlaintext(notes) })
 
   for (const { key, plaintext } of pages) {
-    const fingerprint = sha(plaintext)
+    // Mode is part of the fingerprint: the same note encrypted and in the clear
+    // has identical plaintext, so without this, toggling the password would be
+    // read as "nothing changed" and never re-upload.
+    const fingerprint = sha(`${config.password ? 'enc' : 'plain'}\n${plaintext}`)
     wanted.set(key, fingerprint)
     if (manifest[key] !== fingerprint) texts.set(key, await sealPage(key, plaintext, config.password))
   }

@@ -102,6 +102,19 @@ test('a touched audio file re-uploads only the audio', async () => {
   expect([...plan.files.keys()]).toEqual([notes[0]!.audioKey!])
 })
 
+test('toggling the password re-uploads every page', async () => {
+  const notes = await scanNotes(fixture())
+  const encrypted = await buildPlan(config, notes, {})
+  const manifest = Object.fromEntries(encrypted.wanted)
+
+  // Same notes, no password: plaintext is identical, so only the mode marker in
+  // the fingerprint can catch that the uploaded bytes must change.
+  const open = await buildPlan({ ...config, password: '' }, notes, manifest)
+  expect(open.texts.size).toBe(2)
+  expect(open.files.size).toBe(0)
+  expect([...open.texts.values()].every(h => !h.includes('const DATA='))).toBe(true)
+})
+
 test('uploadAudio:false publishes pages without the recordings', async () => {
   const notes = await scanNotes(fixture())
   const plan = await buildPlan({ ...config, uploadAudio: false }, notes, {})
