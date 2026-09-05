@@ -70,7 +70,7 @@ test('scan resolves siblings through a moved workspace and skips summary stubs',
 test('an unchanged workspace uploads nothing on the next run', async () => {
   const notes = await scanNotes(fixture())
   const first = await buildPlan(config, notes, {})
-  expect(first.texts.size).toBe(2) // note + index
+  expect(first.texts.size).toBe(3) // note + index + error
   expect(first.files.size).toBe(1)
 
   const manifest = Object.fromEntries(first.wanted)
@@ -110,7 +110,7 @@ test('toggling the password re-uploads every page', async () => {
   // Same notes, no password: plaintext is identical, so only the mode marker in
   // the fingerprint can catch that the uploaded bytes must change.
   const open = await buildPlan({ ...config, password: '' }, notes, manifest)
-  expect(open.texts.size).toBe(2)
+  expect(open.texts.size).toBe(2) // error.html is never encrypted, so it is unchanged
   expect(open.files.size).toBe(0)
   expect([...open.texts.values()].every(h => !h.includes('const DATA='))).toBe(true)
 })
@@ -119,5 +119,12 @@ test('uploadAudio:false publishes pages without the recordings', async () => {
   const notes = await scanNotes(fixture())
   const plan = await buildPlan({ ...config, uploadAudio: false }, notes, {})
   expect(plan.files.size).toBe(0)
-  expect(plan.texts.size).toBe(2)
+  expect(plan.texts.size).toBe(3)
+})
+
+test('the error page stays readable even when the site is encrypted', async () => {
+  const plan = await buildPlan(config, await scanNotes(fixture()), {})
+  const err = plan.texts.get('error.html')!
+  expect(err).toContain('页面不存在')
+  expect(err).not.toContain('const DATA=')
 })

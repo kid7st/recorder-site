@@ -222,6 +222,20 @@ export async function sealPage(key: string, plaintext: string, password: string)
   return shell('录音记录', await seal(plaintext, password), search)
 }
 
+/**
+ * Served by COS for any missing key. Never encrypted: it carries no content, and
+ * a 404 that demands a password would look like the site itself is broken.
+ */
+export function errorPage(): string {
+  return openShell(
+    '录音记录',
+    `<h1>页面不存在</h1>
+<p class="meta">这条记录可能已被删除，或者链接不完整。</p>
+<p><a href="/">返回全部记录</a></p>`,
+    '',
+  )
+}
+
 function openShell(title: string, body: string, extraJs: string): string {
   return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">

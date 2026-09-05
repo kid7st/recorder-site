@@ -5,7 +5,7 @@ import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { basename, dirname, extname, join, posix as pathPosix, win32 as pathWin32 } from 'node:path'
 import os from 'node:os'
 import COS from 'cos-nodejs-sdk-v5'
-import { indexPlaintext, notePlaintext, sealPage, type Note } from './site'
+import { errorPage, indexPlaintext, notePlaintext, sealPage, type Note } from './site'
 
 /**
  * Mirrors voicenote's own appConfigDir/appStateDir rule. It has to match
@@ -159,6 +159,10 @@ export async function buildPlan(config: Config, notes: Note[], manifest: Record<
 
   const pages: { key: string; plaintext: string }[] = notes.map(n => ({ key: `n/${n.hash}.html`, plaintext: notePlaintext(n) }))
   pages.push({ key: 'index.html', plaintext: indexPlaintext(notes) })
+
+  const error = errorPage()
+  wanted.set('error.html', sha(error))
+  if (manifest['error.html'] !== sha(error)) texts.set('error.html', error)
 
   for (const { key, plaintext } of pages) {
     // Mode is part of the fingerprint: the same note encrypted and in the clear

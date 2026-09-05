@@ -105,7 +105,9 @@ async function main() {
     ...base,
     WebsiteConfiguration: {
       IndexDocument: { Suffix: 'index.html' },
-      ErrorDocument: { Key: 'index.html' },
+      // Not index.html: when both are missing COS nests one NoSuchKey inside
+      // another and shows the visitor a stack of raw XML errors.
+      ErrorDocument: { Key: 'error.html' },
     },
   })
   console.log('  ✓ 已开启静态网站托管（索引与错误页均为 index.html）')
