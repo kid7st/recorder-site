@@ -2,14 +2,36 @@
 import { createHash } from 'node:crypto'
 import { existsSync, statSync } from 'node:fs'
 import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises'
-import { basename, dirname, extname, join } from 'node:path'
+import { basename, dirname, extname, join, posix as pathPosix, win32 as pathWin32 } from 'node:path'
 import os from 'node:os'
 import COS from 'cos-nodejs-sdk-v5'
 import { indexPlaintext, notePlaintext, sealPage, type Note } from './site'
 
-const CONFIG_PATH = join(os.homedir(), '.config', 'recorder-site', 'config.json')
-const MANIFEST_PATH = join(os.homedir(), '.local', 'state', 'recorder-site', 'manifest.json')
-const VOICENOTE_CONFIG = join(os.homedir(), '.config', 'voicenote', 'config.json')
+/**
+ * Mirrors voicenote's own appConfigDir/appStateDir rule. It has to match
+ * exactly, not merely be reasonable: getting it wrong on Windows means we look
+ * for voicenote's config in a directory it never writes, and the workspace
+ * silently fails to resolve.
+ */
+export function appDir(
+  kind: 'config' | 'state',
+  app: string,
+  plat: string = process.platform,
+  env: Record<string, string | undefined> = process.env,
+  home: string = os.homedir(),
+): string {
+  const p = plat === 'win32' ? pathWin32 : pathPosix
+  if (plat === 'win32') {
+    const fallback = kind === 'config' ? ['AppData', 'Roaming'] : ['AppData', 'Local']
+    const base = (kind === 'config' ? env.APPDATA : env.LOCALAPPDATA) || p.join(home, ...fallback)
+    return p.join(base, app)
+  }
+  return kind === 'config' ? p.join(home, '.config', app) : p.join(home, '.local', 'state', app)
+}
+
+const CONFIG_PATH = join(appDir('config', 'recorder-site'), 'config.json')
+const MANIFEST_PATH = join(appDir('state', 'recorder-site'), 'manifest.json')
+const VOICENOTE_CONFIG = join(appDir('config', 'voicenote'), 'config.json')
 
 type Config = {
   workspace: string
@@ -188,8 +210,8 @@ async function main() {
 
   console.log(`笔记 ${notes.length} 条 | 待上传 ${changed.length} | 待删除 ${stale.length} | 未变 ${plan.wanted.size - changed.length}`)
   if (dryRun) {
-    for (const k of [...changed.slice(0, 40)]) console.log(`  + ${k}`)
-    for (const k of stale.slice(0, 40)) console.log(`  - ${k}`)
+    for (const k of changed) console.log(`  + ${k}`)
+    for (const k of stale) console.log(`  - ${k}`)
     return
   }
   if (changed.length === 0 && stale.length === 0) {

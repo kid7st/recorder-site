@@ -160,7 +160,7 @@ function shell(title: string, sealed: Sealed, extraJs = ''): string {
 // ── content ─────────────────────────────────────────────────────────────────
 
 function listSection(title: string, rows: string[]): string {
-  return rows.length ? `<h2>${title}</h2><ul>${rows.map(r => `<li>${r}</li>`).join('')}</ul>` : ''
+  return rows.length ? `<details><summary>${title}</summary><ul>${rows.map(r => `<li>${r}</li>`).join('')}</ul></details>` : ''
 }
 
 export function notePlaintext(n: Note): string {
@@ -188,10 +188,11 @@ export function indexPlaintext(notes: Note[]): string {
 <h2><a href="n/${n.hash}.html">${esc(n.title)}</a></h2>
 <div class="meta">${esc(sub)}</div></div>`
   })
+  // Every item, newest first. Truncating here silently dropped 313 of 353.
   const actions = notes.flatMap(n => n.actionItems.map(task => ({ task, n })))
   const pending = listSection(
     `待办事项 (${actions.length})`,
-    actions.slice(0, 40).map(a => `${esc(a.task)} <a class="meta" href="n/${a.n.hash}.html">${esc(a.n.date)}</a>`),
+    actions.map(a => `${esc(a.task)} <a class="meta" href="n/${a.n.hash}.html">${esc(a.n.date)}</a>`),
   )
   // Keyed off the newest note, not the clock: a wall-clock stamp would change
   // the page fingerprint on every run and re-upload a site that never changed.

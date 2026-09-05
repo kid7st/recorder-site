@@ -7,9 +7,22 @@ Plug the recorder in, walk away. voicenote transcribes and summarises; this
 republishes the site. Nothing to click.
 
 ```
-recorder → voicenote (transcribe + summarise) → ~/Kairos/Voicenote/ → recorder-site → COS → 浏览器
-              LaunchAgent, 60s                    metadata + audio      LaunchAgent, 5min
+recorder → voicenote (transcribe + summarise) → workspace/ → recorder-site → COS → 浏览器
+              scheduled, 60s                   metadata + audio    scheduled, 5min
 ```
+
+Runs on macOS and Windows. Two schedulers, same code:
+
+| | macOS | Windows |
+| --- | --- | --- |
+| Install | `./install.sh` | `.\install.ps1` |
+| Scheduler | LaunchAgent `sh.fastagent.recorder-site` | Task Scheduler `recorder-site` |
+| Config | `~/.config/recorder-site/config.json` | `%APPDATA%\recorder-site\config.json` |
+| Manifest + log | `~/.local/state/recorder-site/` | `%LOCALAPPDATA%\recorder-site\` |
+
+Those paths mirror voicenote's own, so `workspace` is inherited from its config
+on both platforms. Neither scheduler re-enters a run that is still going, which
+matters on the first run when ~1GB of audio is uploading.
 
 ## What it publishes
 
@@ -63,10 +76,10 @@ Give the API key a sub-account限制到该桶, not your root key.
 ```bash
 git clone <this repo> ~/projects/recorder && cd ~/projects/recorder
 bun install
-./install.sh          # writes the config template on first run
+./install.sh          # Windows: .\install.ps1 — writes the config template on first run
 ```
 
-Fill in `~/.config/recorder-site/config.json`:
+Fill in the config file printed by the installer:
 
 ```json
 {
@@ -102,13 +115,33 @@ bun src/publish.ts --dry-run    # list what would upload
 bun src/publish.ts --force      # ignore the manifest, re-upload everything
 bun src/publish.ts --out DIR    # render locally instead of uploading
 bun test
+
+# macOS
 tail -f ~/.local/state/recorder-site/publish.log
-launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/sh.fastagent.recorder-site.plist   # uninstall
+launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/sh.fastagent.recorder-site.plist
+
+# Windows
+Get-Content -Wait $env:LOCALAPPDATA\recorder-site\publish.log
+Unregister-ScheduledTask -TaskName recorder-site -Confirm:$false
 ```
+
+Set `PUBLISH_INTERVAL` (seconds, default 300) before installing to change the
+schedule.
+
+### Two machines, one bucket
+
+Each machine publishes what its own workspace contains, including `index.html`.
+So if the Mac and the PC hold **different** recordings, whichever ran last owns
+the index and the other machine's notes vanish from the list (their pages stay
+uploaded, just unreachable).
+
+Keep the workspace itself in sync between the machines (iCloud Drive, Syncthing,
+坚果云, …) and the problem disappears: both see the same notes and publish the
+same site. If instead you want them independent, give each its own bucket.
 
 ## Incremental uploads
 
-`~/.local/state/recorder-site/manifest.json` maps each object key to a
+`manifest.json` in the state directory maps each object key to a
 fingerprint: the SHA-256 of a page's **plaintext**, or `size-mtime` for audio.
 Only changed keys upload; keys that disappear from the workspace are deleted
 from the bucket.

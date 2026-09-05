@@ -2,7 +2,8 @@ import { expect, test } from 'bun:test'
 import { mkdtempSync, writeFileSync, mkdirSync, utimesSync } from 'node:fs'
 import { join } from 'node:path'
 import os from 'node:os'
-import { buildPlan, scanNotes } from './publish'
+import { win32 } from 'node:path'
+import { appDir, buildPlan, scanNotes } from './publish'
 
 function fixture(): string {
   const ws = mkdtempSync(join(os.tmpdir(), 'vnsite-'))
@@ -33,6 +34,29 @@ function fixture(): string {
 }
 
 const config = { password: 'pw', uploadAudio: true } as any
+
+// The Windows branch cannot be run on macOS, so pin it by injection instead of
+// leaving it as untested code that only fails on the other machine.
+test('config and state land where voicenote puts them, on both platforms', () => {
+  const win = { APPDATA: 'C:\\Users\\y\\AppData\\Roaming', LOCALAPPDATA: 'C:\\Users\\y\\AppData\\Local' }
+  expect(appDir('config', 'voicenote', 'win32', win, 'C:\\Users\\y')).toBe('C:\\Users\\y\\AppData\\Roaming\\voicenote')
+  expect(appDir('state', 'recorder-site', 'win32', win, 'C:\\Users\\y')).toBe('C:\\Users\\y\\AppData\\Local\\recorder-site')
+  // Missing env vars must still resolve to the real Windows locations.
+  expect(appDir('config', 'voicenote', 'win32', {}, 'C:\\Users\\y')).toBe('C:\\Users\\y\\AppData\\Roaming\\voicenote')
+  expect(appDir('state', 'voicenote', 'win32', {}, 'C:\\Users\\y')).toBe('C:\\Users\\y\\AppData\\Local\\voicenote')
+
+  expect(appDir('config', 'voicenote', 'darwin', {}, '/Users/y')).toBe('/Users/y/.config/voicenote')
+  expect(appDir('state', 'recorder-site', 'linux', {}, '/home/y')).toBe('/home/y/.local/state/recorder-site')
+})
+
+test('the month directory survives whichever separator Bun.Glob returns', () => {
+  // scanNotes does join(workspace, rel) then basename(dirname(...)). On Windows
+  // those are the win32 versions, which accept both separators.
+  for (const rel of ['_metadata/2026-05/x-metadata.json', '_metadata\\2026-05\\x-metadata.json']) {
+    const full = win32.join('C:\\ws', rel)
+    expect(win32.basename(win32.dirname(full))).toBe('2026-05')
+  }
+})
 
 test('scan resolves siblings through a moved workspace and skips summary stubs', async () => {
   const notes = await scanNotes(fixture())

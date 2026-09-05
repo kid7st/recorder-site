@@ -67,7 +67,15 @@ test('index lists notes, action items and searchable text', () => {
   const html = indexPlaintext([note(), note({ hash: 'def', title: '第二条', actionItems: [] })])
   expect(html).toContain('href="n/abc123.html"')
   expect(html).toContain('待办事项 (1)')
+  expect(html).toContain('确认报价')
   expect(html).toContain('data-s="名创报价口径对齐 2026-05-11 石洋 dt 大脑 名创"')
+})
+
+test('every action item reaches the page, not just the first screenful', () => {
+  const many = Array.from({ length: 60 }, (_, i) => note({ hash: `h${i}`, actionItems: [`任务${i}`] }))
+  const html = indexPlaintext(many)
+  expect(html).toContain('待办事项 (60)')
+  expect(html).toContain('任务59')
 })
 
 test('duration formats past an hour', () => {
