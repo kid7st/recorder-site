@@ -1,3 +1,6 @@
 node_modules/
 *.log
 dist/
+SecretKey.csv
+*.csv
+*.bun-build
