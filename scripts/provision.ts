@@ -30,7 +30,6 @@ export async function tcApi(service: string, action: string, version: string, pa
 
   const res = await fetch(`https://${host}`, {
     method: 'POST',
-    proxy: '', // same reason as the COS client: bypass a local VPN proxy
     headers: {
       'Content-Type': 'application/json',
       Host: host,
@@ -64,8 +63,21 @@ export async function loadCred(): Promise<Cred> {
 // re-running has to treat the conflict codes as the desired state.
 const EXISTS = new Set(['BucketAlreadyExists', 'BucketAlreadyOwnedByYou'])
 
+// Bun resolves proxy settings once at startup, so deleting the vars at runtime
+// does not help and neither does the SDK's Proxy:'' option (it is honoured on
+// some request paths and not others). A machine with a VPN proxy has to clear
+// them before the process starts. The schedulers are unaffected: launchd and
+// Task Scheduler never inherit a shell's proxy vars.
+const PROXY_VARS = ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY', 'ALL_PROXY', 'all_proxy']
+function warnIfProxied(): void {
+  const set = PROXY_VARS.filter(k => process.env[k])
+  if (set.length) console.warn(`警告：检测到代理 ${process.env[set[0]!]}，腾讯云请求可能被重置。
+  请改用：env ${PROXY_VARS.map(k => `-u ${k}`).join(' ')} bun ${process.argv[1]?.split('/').pop()} ...\n`)
+}
+
 async function main() {
   const [name, region = 'ap-hongkong'] = process.argv.slice(2)
+  warnIfProxied()
   if (!name) throw new Error('用法: bun scripts/provision.ts <name> [region]   例: bun scripts/provision.ts acme ap-hongkong')
 
   const cred = await loadCred()
@@ -74,7 +86,7 @@ async function main() {
   console.log(`账号 ${Uin} / AppId ${AppId}`)
   console.log(`存储桶 ${bucket} @ ${region}`)
 
-  const cos = new COS({ SecretId: cred.secretId, SecretKey: cred.secretKey, Proxy: '' })
+  const cos = new COS({ SecretId: cred.secretId, SecretKey: cred.secretKey })
   const base = { Bucket: bucket, Region: region }
 
   try {

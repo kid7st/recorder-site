@@ -219,10 +219,7 @@ async function main() {
     return
   }
 
-  // Proxy:'' overrides the SDK's default of honouring http_proxy/https_proxy.
-  // Tencent Cloud is reachable directly; a developer machine's VPN proxy just
-  // drops the connection, and the failure looks like a network outage.
-  const cos = new COS({ SecretId: config.cos.secretId, SecretKey: config.cos.secretKey, Proxy: '' })
+  const cos = new COS({ SecretId: config.cos.secretId, SecretKey: config.cos.secretKey })
   const base = { Bucket: config.cos.bucket, Region: config.cos.region }
   const next = { ...manifest }
 
