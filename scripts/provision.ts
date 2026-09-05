@@ -90,11 +90,15 @@ async function main() {
   const base = { Bucket: bucket, Region: region }
 
   try {
-    await cos.putBucket({ ...base, ACL: 'private' })
-    console.log('  ✓ 已创建存储桶（私有读写）')
+    // Static website hosting serves anonymous readers: a private bucket 403s
+    // every visitor. Safe here only because every page is encrypted before
+    // upload — the bucket holds ciphertext, not notes.
+    await cos.putBucket({ ...base, ACL: 'public-read' })
+    console.log('  ✓ 已创建存储桶（公有读私有写，内容均为密文）')
   } catch (e: any) {
     if (!EXISTS.has(e.code)) throw e
-    console.log('  · 存储桶已存在')
+    await cos.putBucketAcl({ ...base, ACL: 'public-read' })
+    console.log('  · 存储桶已存在，已确认公有读')
   }
 
   await cos.putBucketWebsite({

@@ -55,6 +55,10 @@ password.
 
 Publishing without a password is refused, not defaulted.
 
+The bucket itself is **public-read** — static website hosting serves anonymous
+visitors, so a private bucket 403s everyone. That is safe only because nothing
+readable is ever uploaded.
+
 ## Setup
 
 ### 1. Bucket
