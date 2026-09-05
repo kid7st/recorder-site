@@ -1,0 +1,22 @@
+{
+  "name": "recorder-site",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "vnsite": "./src/publish.ts"
+  },
+  "scripts": {
+    "publish-site": "bun src/publish.ts",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "cos-nodejs-sdk-v5": "^2.14.6",
+    "marked": "^15.0.7"
+  },
+  "devDependencies": {
+    "@happy-dom/global-registrator": "^20.14.0",
+    "@types/bun": "^1.4.1",
+    "typescript": "^7.0.2"
+  }
+}

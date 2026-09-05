@@ -1,0 +1,11 @@
+{
+  "password": "换成你自己的访问口令",
+  "cos": {
+    "secretId": "AKID...",
+    "secretKey": "...",
+    "bucket": "vnsite-1250000000",
+    "region": "ap-hongkong"
+  },
+  "siteUrl": "https://notes.example.com",
+  "uploadAudio": true
+}
